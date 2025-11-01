@@ -346,7 +346,7 @@ class UIController {
     drawModeTabs(currentMode);
     
     // Draw color legend if enabled
-    if (showColorMapCheckbox.getValue() == 1) {
+    if (showColorMapCheckbox != null && showColorMapCheckbox.getValue() == 1) {
       drawColorLegend();
     }
   }
