@@ -4,6 +4,8 @@
 **Project:** Multi-Mode Real-Time Visualizer for Single-Axis Ultrasonic Scanner  
 **Status:** ✅ COMPLETE AND VALIDATED
 
+> **Note (Updated):** All code has been compiled into a single `Visualizer.pde` file. The file references below indicate the class/section within that file where changes were originally made.
+
 ---
 
 ## Executive Summary

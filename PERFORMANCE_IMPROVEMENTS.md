@@ -4,6 +4,8 @@
 **Author:** GitHub Copilot Coding Agent  
 **Project:** Multi-Mode Real-Time Visualizer for Single-Axis Ultrasonic Scanner
 
+> **Note (Updated):** All code has been compiled into a single `Visualizer.pde` file. The file references below indicate the class/section within that file where changes were made.
+
 ---
 
 ## Overview
