@@ -213,8 +213,8 @@ Feel free to modify or redistribute with proper attribution.
 
 ## 💬 Authors / Contributors
 
-**Project Owner:** [Your Name or Lab Name]
-**Documentation & Prompt Engineering:** Prompt Engineer (GPT-5)
+**Project Owner:** Nitin Swarnkar 
 **Date:** 2025-11-01
 
 ---
+
