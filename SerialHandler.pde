@@ -35,19 +35,21 @@ class SerialHandler {
   // Connect to selected port
   boolean connect() {
     try {
-      // Find available port (typically the first one that isn't a system port)
+      // Find available port - prefer Arduino ports
       String[] ports = Serial.list();
       String targetPort = "";
       
-      for (String port : ports) {
-        // Skip system/invalid ports on Windows
-        if (!port.contains("COM") && !port.contains("tty") || 
-            (port.contains("COM") && !port.contains("COM3") && !port.contains("COM4"))) {
-          targetPort = port;
+      // First, try to find Arduino-specific ports
+      for (String p : ports) {
+        if (p.contains("ttyUSB") || p.contains("ttyACM") || 
+            p.contains("COM3") || p.contains("COM4") || 
+            p.contains("usbserial") || p.contains("usbmodem")) {
+          targetPort = p;
           break;
         }
       }
       
+      // If no Arduino port found, use first available non-system port
       if (targetPort.isEmpty() && ports.length > 0) {
         targetPort = ports[0]; // Use first available port as fallback
       }
@@ -56,7 +58,10 @@ class SerialHandler {
         port = new Serial(this, targetPort, selectedBaudRate);
         port.bufferUntil('\n');
         selectedPort = targetPort;
+        println("Connected to port: " + targetPort);
         return true;
+      } else {
+        println("No serial ports available");
       }
       
     } catch (Exception e) {
@@ -89,11 +94,17 @@ class SerialHandler {
   
   // Update serial data
   void update() {
-    while (port != null && port.available() > 0) {
-      String line = port.readString();
-      if (line != null) {
-        processSerialData(line.trim());
+    if (port == null) return;
+    
+    try {
+      while (port.available() > 0) {
+        String line = port.readString();
+        if (line != null && !line.isEmpty()) {
+          processSerialData(line.trim());
+        }
       }
+    } catch (Exception e) {
+      println("Error reading serial data: " + e.getMessage());
     }
   }
   
@@ -171,11 +182,12 @@ class SerialHandler {
     return selectedBaudRate;
   }
   
+  // Simulation state variables
+  private float testAngle = 0;
+  private int testDir = 1;
+  
   // Debug: Test with simulated data
   void simulateData() {
-    static float testAngle = 0;
-    static int testDir = 1;
-    
     // Simulate realistic distance data with some noise
     float distance = 80 + 40 * sin(radians(testAngle * 2)) + random(-10, 10);
     distance = max(20, min(distance, 300)); // Clamp to realistic range

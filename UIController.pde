@@ -298,12 +298,14 @@ class UIController {
   
   // Update port list
   void updatePortList() {
-    if (portDropdown != null) {
+    if (portDropdown != null && serialHandler != null) {
       portDropdown.clear();
       
       String[] ports = serialHandler.getAvailablePorts();
-      for (int i = 0; i < ports.length; i++) {
-        portDropdown.addItem(ports[i], i);
+      if (ports != null) {
+        for (int i = 0; i < ports.length; i++) {
+          portDropdown.addItem(ports[i], i);
+        }
       }
     }
   }

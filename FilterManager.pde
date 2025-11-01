@@ -41,6 +41,9 @@ class FilterManager {
   float applyEMA(float newValue, float angle) {
     int angleIndex = Math.round(angle);
     
+    // Clamp angle to valid range to prevent HashMap growth
+    angleIndex = constrain(angleIndex, 0, 180);
+    
     if (!emaValues.containsKey(angleIndex)) {
       emaValues.put(angleIndex, newValue);
       return newValue;
@@ -56,6 +59,10 @@ class FilterManager {
   // Apply Median filter with window
   float applyMedianFilter(float newValue, float angle) {
     int angleIndex = Math.round(angle);
+    
+    // Clamp angle to valid range to prevent HashMap growth
+    angleIndex = constrain(angleIndex, 0, 180);
+    
     ArrayList<Float> bucket = angleBuckets.get(angleIndex);
     
     if (bucket == null) {

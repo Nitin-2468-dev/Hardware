@@ -301,11 +301,15 @@ class AdvancedFeatures {
   
   // Get motion events for visualization
   ArrayList<MotionEvent> getMotionEvents() {
-    // Clean old events
+    // Clean old events - more efficiently
     long currentTime = millis();
-    for (int i = motionEvents.size() - 1; i >= 0; i--) {
-      if (currentTime - motionEvents.get(i).timestamp > 5000) { // 5 second TTL
-        motionEvents.remove(i);
+    
+    // Use iterator for safe removal during iteration
+    Iterator<MotionEvent> iterator = motionEvents.iterator();
+    while (iterator.hasNext()) {
+      MotionEvent event = iterator.next();
+      if (currentTime - event.timestamp > 5000) { // 5 second TTL
+        iterator.remove();
       }
     }
     
