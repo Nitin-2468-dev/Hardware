@@ -298,12 +298,14 @@ class UIController {
   
   // Update port list
   void updatePortList() {
-    if (portDropdown != null) {
+    if (portDropdown != null && serialHandler != null) {
       portDropdown.clear();
       
       String[] ports = serialHandler.getAvailablePorts();
-      for (int i = 0; i < ports.length; i++) {
-        portDropdown.addItem(ports[i], i);
+      if (ports != null) {
+        for (int i = 0; i < ports.length; i++) {
+          portDropdown.addItem(ports[i], i);
+        }
       }
     }
   }
@@ -344,7 +346,7 @@ class UIController {
     drawModeTabs(currentMode);
     
     // Draw color legend if enabled
-    if (showColorMapCheckbox.getValue() == 1) {
+    if (showColorMapCheckbox != null && showColorMapCheckbox.getValue() == 1) {
       drawColorLegend();
     }
   }

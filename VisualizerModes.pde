@@ -11,8 +11,12 @@
 class VisualizerModes {
   private PGraphics radarLayer, cartesianLayer, graphLayer, replayLayer, layer3D;
   private PGraphics effectsLayer;
-  private int centerX, centerY;
+  private int centerX, centerY, centerZ;
   private float maxRange;
+  
+  // Heatmap resolution constants
+  private static final int ANGLE_STEP = 2;  // Degrees per heatmap cell
+  private static final int DISTANCE_STEP = 3; // Centimeters per heatmap cell
   
   // Colors for different distance ranges
   private color nearColor, mediumColor, farColor;
@@ -26,6 +30,7 @@ class VisualizerModes {
   void setup() {
     centerX = width / 2;
     centerY = height / 2 + 50; // Offset down for UI space
+    centerZ = 0; // Initialize centerZ for 3D visualization
     maxRange = 200; // Maximum distance range in cm
     
     // Initialize graphics layers for double buffering
@@ -33,7 +38,7 @@ class VisualizerModes {
     cartesianLayer = createGraphics(width, height);
     graphLayer = createGraphics(width, height);
     replayLayer = createGraphics(width, height);
-    layer3D = createGraphics(width, height);
+    layer3D = createGraphics(width, height, P3D);
     effectsLayer = createGraphics(width, height);
     
     // Set up color scheme
@@ -43,9 +48,6 @@ class VisualizerModes {
     layer3D.beginDraw();
     layer3D.background(20, 25, 35);
     layer3D.endDraw();
-    
-    // Enable 3D rendering
-    size(width, height, P3D);
   }
   
   // Setup color mapping scheme
@@ -87,8 +89,11 @@ class VisualizerModes {
     // Draw data points
     for (ScanData point : data) {
       if (point.isValid()) {
-        float screenX = centerX + point.smoothDistance * cos(radians(point.angle - 90)) * 2;
-        float screenY = centerY + point.smoothDistance * sin(radians(point.angle - 90)) * 2;
+        // Cache trigonometric calculations for performance
+        float angleRad = radians(point.angle - 90);
+        float scaledDistance = point.smoothDistance * 2;
+        float screenX = centerX + scaledDistance * cos(angleRad);
+        float screenY = centerY + scaledDistance * sin(angleRad);
         
         color pointColor = getDistanceColor(point.smoothDistance);
         radarLayer.fill(pointColor);
@@ -212,36 +217,46 @@ class VisualizerModes {
     replayLayer.beginDraw();
     replayLayer.background(20, 25, 35);
     
-    // Draw heatmap-style visualization
+    // Draw heatmap-style visualization - optimized to avoid large array allocation
     if (data.size() > 0) {
-      // Create heat intensity based on recent data
-      int[][] intensity = new int[181][301]; // angle x distance resolution
+      // Use HashMap for sparse data instead of large 2D array
+      // Key encoding: (angle * 1000 + distance) for efficient integer-based lookup
+      HashMap<Integer, Integer> intensity = new HashMap<Integer, Integer>();
+      HashMap<Integer, int[]> keyCoords = new HashMap<Integer, int[]>();
       
-      // Aggregate data for heatmap
+      // Aggregate data for heatmap - only store actual data points
       for (ScanData point : data) {
         if (point.isValid()) {
-          int angleIdx = constrain((int)point.angle, 0, 180);
-          int distanceIdx = constrain((int)point.smoothDistance, 0, 300);
+          int angleIdx = constrain((int)(point.angle / ANGLE_STEP) * ANGLE_STEP, 0, 180);
+          int distanceIdx = constrain((int)(point.smoothDistance / DISTANCE_STEP) * DISTANCE_STEP, 0, 300);
+          int key = angleIdx * 1000 + distanceIdx; // Encode as single integer
           
-          intensity[angleIdx][distanceIdx]++;
+          intensity.put(key, intensity.getOrDefault(key, 0) + 1);
+          if (!keyCoords.containsKey(key)) {
+            keyCoords.put(key, new int[]{angleIdx, distanceIdx});
+          }
         }
       }
       
-      // Draw heatmap
-      for (int angle = 0; angle < 181; angle += 2) {
-        for (int dist = 0; dist < 301; dist += 3) {
-          int intensityValue = intensity[angle][dist];
-          if (intensityValue > 0) {
-            float screenX = centerX + cos(radians(angle - 90)) * dist * 2;
-            float screenY = centerY + sin(radians(angle - 90)) * dist * 2;
-            
-            // Color based on intensity
-            color heatColor = map(intensityValue, 0, 10, color(50, 100, 150), color(255, 200, 100));
-            replayLayer.fill(heatColor, map(intensityValue, 0, 10, 50, 200));
-            replayLayer.noStroke();
-            replayLayer.ellipse(screenX, screenY, 6, 6);
-          }
-        }
+      // Draw heatmap - only render where we have data
+      for (Integer key : intensity.keySet()) {
+        int[] coords = keyCoords.get(key);
+        int angle = coords[0];
+        int dist = coords[1];
+        int intensityValue = intensity.get(key);
+        
+        // Cache trigonometric calculation
+        float angleRad = radians(angle - 90);
+        float scaledDist = dist * 2;
+        float screenX = centerX + cos(angleRad) * scaledDist;
+        float screenY = centerY + sin(angleRad) * scaledDist;
+        
+        // Color based on intensity
+        float heatValue = constrain(map(intensityValue, 1, 10, 0, 1), 0, 1);
+        color heatColor = lerpColor(color(50, 100, 150), color(255, 200, 100), heatValue);
+        replayLayer.fill(heatColor, map(intensityValue, 1, 10, 100, 220));
+        replayLayer.noStroke();
+        replayLayer.ellipse(screenX, screenY, 6, 6);
       }
     }
     
@@ -271,17 +286,22 @@ class VisualizerModes {
     // Draw 3D grid
     draw3DGrid();
     
+    // Set sphere detail once outside loop for performance
+    sphereDetail(4);
+    
     // Draw 3D data points
     for (ScanData point : data) {
       if (point.isValid()) {
-        float x = point.smoothDistance * cos(radians(point.angle));
-        float z = point.smoothDistance * sin(radians(point.angle));
-        float y = 0;
+        // Cache trigonometric calculations
+        float angleRad = radians(point.angle);
+        float scaledDistance = point.smoothDistance * 2;
+        float x = scaledDistance * cos(angleRad);
+        float z = scaledDistance * sin(angleRad);
         
-        // Scale and translate to screen
-        float screenX = centerX + x * 2;
-        float screenZ = centerZ + z * 2;
-        float screenY = centerY - y * 2;
+        // Calculate screen coordinates
+        float screenX = centerX + x;
+        float screenZ = centerZ + z;
+        float screenY = centerY;
         
         color pointColor = getDistanceColor(point.smoothDistance);
         
@@ -290,7 +310,6 @@ class VisualizerModes {
         translate(screenX, screenY, screenZ);
         fill(pointColor);
         noStroke();
-        sphereDetail(4);
         sphere(8);
         popMatrix();
       }
@@ -433,9 +452,9 @@ class VisualizerModes {
   // Enable/disable 3D orbit control
   void setOrbitEnabled(boolean enabled) {
     orbitEnabled = enabled;
+    // Note: P3D renderer is now enabled in main setup()
     if (enabled) {
-      // Enable 3D rendering
-      size(width, height, P3D);
+      println("3D orbit control enabled");
     }
   }
   

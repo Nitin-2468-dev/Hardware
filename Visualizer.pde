@@ -68,7 +68,7 @@ class ScanData {
 
 // Setup and initialization
 void setup() {
-  size(CANVAS_WIDTH, CANVAS_HEIGHT);
+  size(CANVAS_WIDTH, CANVAS_HEIGHT, P3D);
   
   // Initialize data structures
   scanBuffer = new ArrayList<ScanData>();
@@ -134,10 +134,8 @@ void draw() {
   
   // Maintain buffer size for performance
   if (scanBuffer.size() > 1000) {
-    // Keep only recent data for performance
-    for (int i = 0; i < 200; i++) {
-      if (scanBuffer.size() > 800) scanBuffer.remove(0);
-    }
+    // Keep only recent data for performance - use subList for O(n) instead of O(n²)
+    scanBuffer = new ArrayList<ScanData>(scanBuffer.subList(scanBuffer.size() - 800, scanBuffer.size()));
   }
   
   // Update and draw current visualization mode
