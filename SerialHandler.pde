@@ -182,9 +182,9 @@ class SerialHandler {
     return selectedBaudRate;
   }
   
-  // Simulation state variables
-  private float testAngle = 0;
-  private int testDir = 1;
+  // Simulation state variables for test data generation
+  private float testAngle = 0;      // Current sweep angle (0-180 degrees)
+  private int testDir = 1;          // Sweep direction: 1 for forward, -1 for backward
   
   // Debug: Test with simulated data
   void simulateData() {

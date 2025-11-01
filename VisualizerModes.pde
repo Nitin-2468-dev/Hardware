@@ -14,6 +14,10 @@ class VisualizerModes {
   private int centerX, centerY, centerZ;
   private float maxRange;
   
+  // Heatmap resolution constants
+  private static final int ANGLE_STEP = 2;  // Degrees per heatmap cell
+  private static final int DISTANCE_STEP = 3; // Centimeters per heatmap cell
+  
   // Colors for different distance ranges
   private color nearColor, mediumColor, farColor;
   
@@ -216,24 +220,29 @@ class VisualizerModes {
     // Draw heatmap-style visualization - optimized to avoid large array allocation
     if (data.size() > 0) {
       // Use HashMap for sparse data instead of large 2D array
-      HashMap<String, Integer> intensity = new HashMap<String, Integer>();
+      // Key encoding: (angle * 1000 + distance) for efficient integer-based lookup
+      HashMap<Integer, Integer> intensity = new HashMap<Integer, Integer>();
+      HashMap<Integer, int[]> keyCoords = new HashMap<Integer, int[]>();
       
       // Aggregate data for heatmap - only store actual data points
       for (ScanData point : data) {
         if (point.isValid()) {
-          int angleIdx = constrain((int)(point.angle / 2) * 2, 0, 180); // Round to nearest 2
-          int distanceIdx = constrain((int)(point.smoothDistance / 3) * 3, 0, 300); // Round to nearest 3
-          String key = angleIdx + "," + distanceIdx;
+          int angleIdx = constrain((int)(point.angle / ANGLE_STEP) * ANGLE_STEP, 0, 180);
+          int distanceIdx = constrain((int)(point.smoothDistance / DISTANCE_STEP) * DISTANCE_STEP, 0, 300);
+          int key = angleIdx * 1000 + distanceIdx; // Encode as single integer
           
           intensity.put(key, intensity.getOrDefault(key, 0) + 1);
+          if (!keyCoords.containsKey(key)) {
+            keyCoords.put(key, new int[]{angleIdx, distanceIdx});
+          }
         }
       }
       
       // Draw heatmap - only render where we have data
-      for (String key : intensity.keySet()) {
-        String[] parts = key.split(",");
-        int angle = Integer.parseInt(parts[0]);
-        int dist = Integer.parseInt(parts[1]);
+      for (Integer key : intensity.keySet()) {
+        int[] coords = keyCoords.get(key);
+        int angle = coords[0];
+        int dist = coords[1];
         int intensityValue = intensity.get(key);
         
         // Cache trigonometric calculation
