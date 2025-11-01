@@ -43,16 +43,20 @@ This is a complete, production-ready multi-mode real-time visualizer for single-
 
 ```
 ultrasonic_visualizer/
-├── 📄 Visualizer.pde              # Main application entry point
-├── 📄 SerialHandler.pde           # Serial communication management
-├── 📄 VisualizerModes.pde         # All visualization rendering functions
-├── 📄 FilterManager.pde           # Data smoothing and filtering
-├── 📄 ReplayManager.pde           # CSV logging and replay system
-├── 📄 UIController.pde            # ControlP5 GUI management
-├── 📄 AdvancedFeatures.pde        # Motion detection, auto-detect, etc.
+├── 📄 Visualizer.pde              # Complete application - all code in one file
+│   ├── ScanData class             # Data structure for scan readings
+│   ├── MotionEvent class          # Motion detection data structure
+│   ├── SerialHandler class        # Serial communication management
+│   ├── FilterManager class        # Data smoothing and filtering
+│   ├── ReplayManager class        # CSV logging and replay system
+│   ├── VisualizerModes class      # All visualization rendering functions
+│   ├── UIController class         # ControlP5 GUI management
+│   └── AdvancedFeatures class     # Motion detection, auto-detect, etc.
 └── 📂 arduino_test/
     └── 📄 ultrasonic_simulator.ino # Arduino simulation for testing
 ```
+
+**Note:** All Processing code has been compiled into a single `Visualizer.pde` file for easier distribution and management. The file contains 8 classes and approximately 2,363 lines of code.
 
 ---
 
@@ -95,8 +99,8 @@ Servo: Built-in library
    Install the latest version
    ```
 3. **Create project folder:** `ultrasonic_visualizer/`
-4. **Copy all .pde files** to the project folder
-5. **Open Visualizer.pde** as the main sketch
+4. **Copy Visualizer.pde** to the project folder
+5. **Open Visualizer.pde** (contains all code in one file)
 
 ### Step 2: Arduino Testing (No Hardware Required)
 1. **Open Arduino IDE** 2.0+
@@ -382,14 +386,14 @@ Arduino Data (115200 baud)
 ## 📚 Extension & Customization
 
 ### Adding New Visualization Modes:
-1. **Extend VisualizerModes class** - add new draw function
-2. **Update mode selection** - modify UI controller
+1. **Extend VisualizerModes class** in Visualizer.pde - add new draw function
+2. **Update mode selection** - modify UI controller section
 3. **Add keyboard shortcut** - update main key handling
 4. **Test integration** - ensure smooth operation
 
 ### Custom Filtering:
-1. **Modify FilterManager** - add new filter algorithms
-2. **GUI integration** - add sliders for filter parameters
+1. **Modify FilterManager class** in Visualizer.pde - add new filter algorithms
+2. **GUI integration** - add sliders for filter parameters in UIController
 3. **Real-time adjustment** - enable live parameter changes
 4. **Validation testing** - verify filter effectiveness
 
