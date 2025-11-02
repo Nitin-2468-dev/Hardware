@@ -1,4 +1,5 @@
 /*
+UPDATED
 =======================================================
   Multi-Mode Real-Time Visualizer for Single-Axis 
   Ultrasonic Scanner
@@ -29,6 +30,7 @@ boolean isConnected = false;
 boolean isRecording = false;
 boolean isPaused = false;
 boolean replayMode = false;
+PApplet sketch;  // Reference to main Processing sketch
 
 // Data buffers
 ArrayList<ScanData> scanBuffer;
@@ -100,6 +102,7 @@ class MotionEvent {
 */
 
 class SerialHandler {
+  PApplet sketch;
   private Serial port;
   private String[] availablePorts;
   private String selectedPort;
@@ -112,8 +115,9 @@ class SerialHandler {
   private float testAngle = 0;      // Current sweep angle (0-180 degrees)
   private int testDir = 1;          // Sweep direction: 1 for forward, -1 for backward
   
-  // Constructor
-  SerialHandler() {
+  // Constructor - accept parent PApplet so Processing methods can be registered
+  SerialHandler(PApplet parent) {
+    this.sketch = parent;
     this.availablePorts = Serial.list();
     this.selectedPort = "";
     this.selectedBaudRate = 115200;
@@ -150,7 +154,7 @@ class SerialHandler {
       }
       
       if (!targetPort.isEmpty()) {
-        port = new Serial(this, targetPort, selectedBaudRate);
+        port = new Serial(sketch, targetPort, selectedBaudRate);
         port.bufferUntil('\n');
         selectedPort = targetPort;
         println("Connected to port: " + targetPort);
@@ -168,7 +172,7 @@ class SerialHandler {
   // Connect to specific port
   boolean connect(String portName) {
     try {
-      port = new Serial(this, portName, selectedBaudRate);
+      port = new Serial(sketch, portName, selectedBaudRate);
       port.bufferUntil('\n');
       selectedPort = portName;
       return true;
@@ -436,7 +440,7 @@ class FilterManager {
   // Calculate median from ArrayList
   private float calculateMedian(ArrayList<Float> values) {
     ArrayList<Float> sorted = new ArrayList<Float>(values);
-    Collections.sort(sorted);
+    java.util.Collections.sort(sorted);
     
     int size = sorted.size();
     if (size % 2 == 0) {
@@ -886,13 +890,14 @@ class VisualizerModes {
     centerZ = 0; // Initialize centerZ for 3D visualization
     maxRange = 200; // Maximum distance range in cm
     
-    // Initialize graphics layers for double buffering
-    radarLayer = createGraphics(width, height);
-    cartesianLayer = createGraphics(width, height);
-    graphLayer = createGraphics(width, height);
-    replayLayer = createGraphics(width, height);
-    layer3D = createGraphics(width, height, P3D);
-    effectsLayer = createGraphics(width, height);
+  // Initialize graphics layers for double buffering
+  // Use P2D for 2D layers to be compatible with a P3D sketch
+  radarLayer = createGraphics(width, height, P2D);
+  cartesianLayer = createGraphics(width, height, P2D);
+  graphLayer = createGraphics(width, height, P2D);
+  replayLayer = createGraphics(width, height, P2D);
+  layer3D = createGraphics(width, height, P3D);
+  effectsLayer = createGraphics(width, height, P2D);
     
     // Set up color scheme
     setupColorScheme();
@@ -1344,11 +1349,11 @@ class UIController {
   private Slider maxRangeSlider;
   private Slider replaySpeedSlider;
   
-  // Checkboxes
-  private Checkbox showGridCheckbox;
-  private Checkbox showLabelsCheckbox;
-  private Checkbox showColorMapCheckbox;
-  private Checkbox enableSmoothingCheckbox;
+  // CheckBoxes
+  private CheckBox showGridCheckBox;
+  private CheckBox showLabelsCheckBox;
+  private CheckBox showColorMapCheckBox;
+  private CheckBox enableSmoothingCheckBox;
   
   // Text labels
   private Textlabel statusLabel;
@@ -1378,9 +1383,9 @@ class UIController {
     cp5.setColorBackground(color(40, 50, 70));
     cp5.setColorForeground(color(60, 80, 100));
     cp5.setColorActive(color(80, 120, 160));
-    cp5.setColorLabel(color(200, 220, 240));
-    cp5.setColorValue(color(150, 180, 200));
-    cp5.setColorCursor(color(255, 200, 100));
+    // cp5.setColorLabel(color(200, 220, 240));
+    // cp5.setColorValue(color(150, 180, 200));
+    // cp5.setColorCursor(color(255, 200, 100));
     
     setupSerialControls();
     setupDataControls();
@@ -1533,28 +1538,28 @@ class UIController {
   private void setupDisplayControls() {
     int yOffset = UI_Y + 305;
     
-    showGridCheckbox = cp5.addCheckbox("showGrid")
+    showGridCheckBox = cp5.addCheckBox("showGrid")
       .setPosition(UI_X, yOffset)
       .setSize(15, 15)
       .setLabel("Show Grid")
       .setColorLabel(color(200, 220, 240))
       .setValue(1);
     
-    showLabelsCheckbox = cp5.addCheckbox("showLabels")
+    showLabelsCheckBox = cp5.addCheckBox("showLabels")
       .setPosition(UI_X, yOffset + 20)
       .setSize(15, 15)
       .setLabel("Show Labels")
       .setColorLabel(color(200, 220, 240))
       .setValue(1);
     
-    showColorMapCheckbox = cp5.addCheckbox("showColorMap")
+    showColorMapCheckBox = cp5.addCheckBox("showColorMap")
       .setPosition(UI_X, yOffset + 40)
       .setSize(15, 15)
       .setLabel("Show Color Legend")
       .setColorLabel(color(200, 220, 240))
       .setValue(1);
     
-    enableSmoothingCheckbox = cp5.addCheckbox("enableSmoothing")
+    enableSmoothingCheckBox = cp5.addCheckBox("enableSmoothing")
       .setPosition(UI_X, yOffset + 60)
       .setSize(15, 15)
       .setLabel("Enable Smoothing")
@@ -1666,7 +1671,7 @@ class UIController {
     drawModeTabs(currentMode);
     
     // Draw color legend if enabled
-    if (showColorMapCheckbox != null && showColorMapCheckbox.getValue() == 1) {
+    if (showColorMapCheckBox != null && showColorMapCheckBox.getValue() == 1) {
       drawColorLegend();
     }
   }
@@ -1974,7 +1979,7 @@ class AdvancedFeatures {
         save(fullPath);
       } else {
         // Save only visualization area
-        PGraphics exportImage = createGraphics(width, height);
+  PGraphics exportImage = createGraphics(width, height, P2D);
         exportImage.beginDraw();
         
         // Copy visualization area only (exclude UI panel)
@@ -2088,7 +2093,7 @@ class AdvancedFeatures {
     long currentTime = millis();
     
     // Use iterator for safe removal during iteration
-    Iterator<MotionEvent> iterator = motionEvents.iterator();
+    java.util.Iterator<MotionEvent> iterator = motionEvents.iterator();
     while (iterator.hasNext()) {
       MotionEvent event = iterator.next();
       if (currentTime - event.timestamp > 5000) { // 5 second TTL
@@ -2179,15 +2184,20 @@ class AdvancedFeatures {
 */
 
 // Setup and initialization
-void setup() {
+void settings() {
+  // Move size() here to ensure the renderer is initialized before any
+  // PGraphics or P3D/P2D resources are created. See Processing docs.
   size(CANVAS_WIDTH, CANVAS_HEIGHT, P3D);
+}
+
+void setup() {
   
   // Initialize data structures
   scanBuffer = new ArrayList<ScanData>();
   recordedData = new ArrayList<ScanData>();
   
   // Initialize modules
-  serialHandler = new SerialHandler();
+  serialHandler = new SerialHandler(this);
   visualizer = new VisualizerModes();
   filterManager = new FilterManager();
   replayManager = new ReplayManager();
